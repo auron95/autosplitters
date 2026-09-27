@@ -1,0 +1,492 @@
+enum Build {
+    PrePatch,
+    PostPatch,
+}
+
+enum Boss: i8 {
+    Byfteriza,
+    Clareon,
+    Gargantula,
+    Laspisus,
+    Giasburn,
+    Carveros,
+    Basileus,
+    Brachion,
+    Oceanus,
+    Ura,
+    LeKyanos,
+    LeErythros,
+    Tentacle,
+    TheosHead,
+    TheosTentacle,
+    TheosCrystal,
+    Serpentus,
+    Lombrigius,
+    Magamandra,
+    PirateRevenant,
+    Exmetal,
+    DoxaGriel,
+    Coelacantos,
+    Minos,
+    Nestor,
+    Hydra,
+    AvocadoCoast,
+    AvocadoGendarme,
+    Kiergaard,
+    Grazios,
+}
+
+fn boss_settings_name(boss: Boss) -> String {
+    return match boss {
+        Boss.Byfteriza => "byfteriza",
+        Boss.Clareon => "clareon",
+        Boss.Gargantula => "gargantula",
+        Boss.Laspisus => "laspisus",
+        Boss.Giasburn => "giasburn",
+        Boss.Carveros => "carveros",
+        Boss.Basileus => "basileus",
+        Boss.Brachion => "brachion",
+        Boss.Oceanus => "oceanus",
+        Boss.Ura => "ura",
+        Boss.LeKyanos => "le_kyanos",
+        Boss.LeErythros => "le_erythros",
+        Boss.Tentacle => "tentacle",
+        Boss.TheosHead => "theos_head",
+        Boss.TheosCrystal => "theos_crystal",
+        Boss.TheosTentacle => "theos_tentacle",
+        Boss.Serpentus => "serpentus",
+        Boss.Lombrigius => "lombrigius",
+        Boss.Magamandra => "magamandra",
+        Boss.PirateRevenant => "pirate_revenant",
+        Boss.Exmetal => "exmetal",
+        Boss.DoxaGriel => "doxa_griel",
+        Boss.Coelacantos => "coelacantos",
+        Boss.Minos => "minos",
+        Boss.Nestor => "nestor",
+        Boss.Hydra => "hydra",
+        Boss.AvocadoCoast => "avocado_coast",
+        Boss.AvocadoGendarme => "avocado_gendarme",
+        Boss.Kiergaard => "kiergaard",
+        Boss.Grazios => "grazios",
+    }
+}
+
+let build: Build
+let completedSplits: Map<i32, bool> = Map.new()
+struct BossOffset {
+    boss: Boss,
+    offset: i32,
+}
+
+state "ys8.exe" {
+    if build == Build.PostPatch || build == Build.PrePatch {
+        loadingState: i32 at "ys8.exe", 0x707FC4;
+        sceneMain: i32? at "ys8.exe", 0x0708220, 0xAB0;
+        sceneBackup: i32 at "ys8.exe", 0x0708220, 0xBA8;
+        scene: i32 = {
+            match sceneMain {
+                Some(0) => sceneBackup,
+                Some(scene) => scene,
+                None => sceneBackup,
+            }
+        };
+        // bossHealth: f32? at "ys8.exe", 0x705DC4, 0x3B8, 0x8, 0x0, 0x1088;
+        bossHealth: f32? at "ys8.exe", 0x6CAC48, 0x1108, 0x9c0, 0x1088;
+        journalAddress: address at "ys8.exe", 0x6CAC30;
+        slainBosses = {
+            let bosses = Map.new<Boss, i8>()
+            for { boss, offset } in [
+                BossOffset { boss: Boss.Clareon, offset: 0x00 },
+                BossOffset { boss: Boss.Gargantula, offset: 0x01 },
+                BossOffset { boss: Boss.Laspisus, offset: 0x02 },
+                BossOffset { boss: Boss.Giasburn, offset: 0x03 },
+                BossOffset { boss: Boss.Carveros, offset: 0x04 },
+                BossOffset { boss: Boss.Basileus, offset: 0x05 },
+                BossOffset { boss: Boss.Brachion, offset: 0x06 },
+                BossOffset { boss: Boss.Oceanus, offset: 0x07 },
+                BossOffset { boss: Boss.Ura, offset: 0x08 },
+                BossOffset { boss: Boss.LeKyanos, offset: 0x0c },
+                BossOffset { boss: Boss.LeErythros, offset: 0x0d },
+                BossOffset { boss: Boss.Tentacle, offset: 0x0e },
+                BossOffset { boss: Boss.TheosHead, offset: 0x10 },
+                BossOffset { boss: Boss.TheosTentacle, offset: 0x12 },
+                BossOffset { boss: Boss.TheosCrystal, offset: 0x13 },
+                BossOffset { boss: Boss.Serpentus, offset: 0x15 },
+                BossOffset { boss: Boss.Lombrigius, offset: 0x17 },
+                BossOffset { boss: Boss.Magamandra, offset: 0x18 },
+                BossOffset { boss: Boss.PirateRevenant, offset: 0x19 },
+                BossOffset { boss: Boss.Exmetal, offset: 0x1a },
+                BossOffset { boss: Boss.DoxaGriel, offset: 0x1b },
+                BossOffset { boss: Boss.Coelacantos, offset: 0x1c },
+                BossOffset { boss: Boss.Minos, offset: 0x1d },
+                BossOffset { boss: Boss.Nestor, offset: 0x1e },
+                BossOffset { boss: Boss.Hydra, offset: 0x1f },
+                BossOffset { boss: Boss.AvocadoCoast, offset: 0x20 },
+                BossOffset { boss: Boss.AvocadoGendarme, offset: 0x22 },
+                BossOffset { boss: Boss.Kiergaard, offset: 0x25 },
+                BossOffset { boss: Boss.Grazios, offset: 0x28 },
+            ] {
+                bosses[boss] = process.read<i8>(journalAddress.offset(0x22C50 + offset))?
+            }
+            bosses[Boss.Byfteriza] = byfteriza
+            bosses
+        };
+        byfteriza: i8 at "ys8.exe", 0x6CAC30, 0x22B9E;
+    }
+}
+
+settings {
+    "Bosses" {
+        "Tentacle" => tentacle: false,
+        "Byfteriza" => byfteriza: false,
+        /// Only splits the first time it is defeated.
+        "Avocado (Nameless Coast)" => avocado_coast: false,
+        "Kiergaard" => kiergaard: false,
+        "Serpentus" => serpentus: false,
+        "Clareon" => clareon: false,
+        "Lombrigius" => lombrigius: false,
+        "Gargantula" => gargantula: false,
+        "Magamandra" => magamandra: false,
+        "Laspisus" => laspisus: false,
+        "Pirate Revenant" => pirate_revenant: false,
+        "Avocado (Gendarme)" => avocado_gendarme: false,
+        "Giasburn" => giasburn: false,
+        "Exmetal" => exmetal: false,
+        "Carveros" => carveros: false,
+        "Doxa Griel" => doxa_griel: false,
+        "Basileus" => basileus: false,
+        "Coelacantos" => coelacantos: false,
+        "Oceanus" => oceanus: false,
+        /// Splits every time it is defeated.
+        "Le-Kyanos" => le_kyanos: false,
+        "Le-Erythros" => le_erythros: false,
+        "Grazios" => grazios: false,
+        "Brachion" => brachion: false,
+        "Psyche-Hydra" => hydra: false,
+        "Psyche-Minos" => minos: false,
+        "Psyche-Nestor" => nestor: false,
+        "Psyche-Ura" => ura: false,
+
+        "Theos" {
+            "Phase 1" => theos_tentacle: false,
+            "Phase 2" => theos_crystal: false,
+            "Phase 3" => theos_head: false,
+        },
+    },
+    "Areas" {
+        "Lombardia" {
+            "Deck" => lombardia_deck key "scene_45460": false,
+            "Captain's Cabin" => captains_cabin key "scene_47815": false,
+            "Dining Hall" => dining_hall key "scene_24444": false,
+            "Corridor" => corridor key "scene_9519": false,
+            "Deck (Night)" => deck_night key "scene_8230": false,
+            "Tentacle Fight" => tentacle_fight key "scene_59671": false,
+        },
+        "Calm Inlet" => calm_inlet key "scene_2434313": false,
+        "Waterdrop Cave" {
+            "Waterdrop 1" => waterdrop_1 key "scene_5323": false,
+            "Sword Room" => sword_room key "scene_28932": false,
+            "Waterdrop 2" => waterdrop_2 key "scene_16297": false,
+            "Boss Area" => byfteriza_area key "scene_21458": false,
+            "Cliff" => waterdrop_cliff key "scene_21081": false,
+        },
+        "Nameless coast" {
+            "Starting beach" => starting_beach key "scene_14652": false,
+            "Stone bridge" => stone_bridge key "scene_7847": false,
+            "Outside camp" => outside_camp key "scene_124974": false,
+            "Towards Beach" => towards_beach key "scene_24126": false,
+            "Beach south" => beach_south key "scene_107553": false,
+            "Avocado Arena" => avocado_arena key "scene_123918": false,
+            "Towards Coral" => towards_coral key "scene_1624": false,
+            "Coral Camp" => coral_camp key "scene_53417": false,
+        },
+        "Towering Coral Forest" {
+            "Entrance" => coral_entrance key "scene_10123": false,
+            "Webs" => coral_webs key "scene_4008": false,
+            "Before Serpentus" => before_serpentus key "scene_42986": false,
+            "Serpentus Area" => serpentus_area key "scene_8596": false,
+            "After Serpentus" => after_serpentus key "scene_14247": false,
+            "Waterfalls" => waterfalls key "scene_17947": false,
+            "Before Clareon" => before_clareon key "scene_354": false,
+            "Clareon Area" => clareon_area key "scene_20630": false,
+        },
+        "Great River Valley" {
+            "Plateau top" => plateau_top key "scene_20676": false,
+        },
+        "Beast Hills" {
+            "Valley Camp" => valley_camp key "scene_2437": false,
+            "Valley Camp (Sunset)" => valley_camp_sunset key "scene_8166": false,
+            "Valley Camp (Dawn)" => valley_camp_dawn key "scene_8555": false,
+            "North" => north key "scene_43116": false,
+            "Schlamm Camp" => schlamm_camp key "scene_31755": false,
+            "South" => south key "scene_6493": false,
+        },
+        "Eroded Valley" {
+            "Entrance" => eroded_entrance key "scene_8394": false,
+            "Lombrigius Cave" => lombrigius_cave key "scene_12671": false,
+            "Webs" => eroded_webs key "scene_599": false,
+            "Before Gargantula" => before_gargantula key "scene_2774": false,
+            "Gargantula Cave" => gargantula_cave key "scene_10951": false,
+        },
+        "Schlamm Jungle" {
+            "Entrance" => schlamm_entrance key "scene_40353": false,
+            "West 1" => schlamm_west_1 key "scene_3302": false,
+            "West 2" => schlamm_west_2 key "scene_5653": false,
+            "Magamandra swamp" => magamandra_swamp key "scene_11098": false,
+            "East 1" => schlamm_east_1 key "scene_709": false,
+            "East 2" => schlamm_east_2 key "scene_4144": false,
+            "East 3" => schlamm_east_3 key "scene_736": false,
+            "Laspisus swamp" => laspisus_swamp key "scene_19461": false,
+        },
+        "Water and Wood Hills" {
+            "Main area" => waw_main_area key "scene_13721": false,
+            "Camp" => waw_camp key "scene_20546": false,
+        },
+        "Seiren Southeast" {
+            "Longhorn Coast" => longhorn_coast key "scene_16364": false,
+            "Nostalgia Cape" => nostalgia_cape key "scene_22441": false,
+            "East Coast Cave" => east_coast_cave key "scene_99248": false,
+        },
+        "Pirate Ship Eleftheria" {
+            "Deckhouse" => eleftheria_deckhouse key "scene_14009": false,
+            "Deck" => eleftheria_deck key "scene_55973": false,
+        },
+        "Primordial Passage" {
+            "Passage" => primordial_passage key "scene_16508": false,
+            "Camp" => passage_camp key "scene_30468": false,
+        },
+        "Mt. Gendarme" {
+            "Bottom Lvl." => gendarme_bottom_lvl key "scene_7349": false,
+            "Mid Lvl. 1" => gendarme_mid_lvl_1 key "scene_4331": false,
+            "Outside Cabin" => outside_cabin key "scene_23981": false,
+            "Ricotta's Cabin" => ricottas_cabin key "scene_72623": false,
+            "Avocado Cave" => avocado_cave key "scene_81490": false,
+            "Upper Lv. 1" => gendarme_upper_lv_1 key "scene_1669": false,
+            "Upper Lv. 2" => gendarme_upper_lv_2 key "scene_453": false,
+            "Upper Lv. 3" => gendarme_upper_lv_3 key "scene_598": false,
+            "Ridge" => giasburn_ridge key "scene_57432": false,
+            "Exit to Mountain Pinnacle Trail" => exit_to_mountain_pinnacle_trail key "scene_73384": false,
+        },
+        "Mountain Pinnacle Trail" {
+            "Upper" => trail_upper key "scene_1492": false,
+            "Cave 1" => trail_cave_1 key "scene_464": false,
+            "Lower 1" => trail_lower_1 key "scene_611": false,
+            "Lower 2" => trail_lower_2 key "scene_1046": false,
+            "Lower 3" => trail_lower_3 key "scene_615": false,
+            "Cave 2" => trail_cave_2 key "scene_3258": false,
+        },
+        "Temple Approach" {
+            "Camp" => approach_camp key "scene_50308": false,
+            "To Titis Primeval Forest" => to_titis_primeval_forest key "scene_9023": false,
+            "Gate" => approach_gate key "scene_26725": false,
+            "Stairs Room" => stairs_room key "scene_2895": false,
+            "Bridge" => approach_bridge key "scene_21818": false,
+            "Mist Bridge" => mist_bridge key "scene_130164": false,
+            "Le-Erythros Arena" => le_erythros_arena key "scene_21372": false,
+        },
+        "Temple of the Great Tree" {
+            "Main Quarters" => temple_main_quarters key "scene_25044": false,
+            "Brachion Area" => brachion_area key "scene_32265": false,
+            "Octus Entrance" => octus_entrance key "scene_61210": false,
+        },
+        "Ruins of Eternia" {
+            "Central District" => ruins_central_district key "scene_110722": false,
+            "Stairs to Towal" => ruins_to_towal key "scene_507": false,
+            "Central Stupa" => ruins_central_stupa key "scene_28412": false,
+            "Aerial Corridor" => ruins_aerial_corridor key "scene_131512": false,
+        },
+        "Towal Highway" {
+            "Towal 1" => towal_1 key "scene_12793": false,
+            "Towal 2" => towal_2 key "scene_21266": false,
+            "Towal 3" => towal_3 key "scene_20594": false,
+            "Camp" => towal_camp key "scene_68522": false,
+        },
+        "Baja Tower" {
+            "Baja 1" => baja_1 key "scene_7767": false,
+            "Baja 2-1" => baja_2_1 key "scene_384": false,
+            "Baja 3" => baja_3 key "scene_622": false,
+            "Hallway 1-1" => hallway_1_1 key "scene_543": false,
+            "Hallway 1-2" => exmetal_area key "scene_17276": false,
+            "Baja 5-1" => baja_5_1 key "scene_7623": false,
+            "Baja 6" => baja_6 key "scene_24698": false,
+            "Baja 7" => carveros_area key "scene_15403": false,
+        },
+        "Vista Ridge" {
+            "Stairs" => stairs key "scene_30114": false,
+            "Kong area" => kong_area key "scene_31754": false,
+        },
+        "Valley of Kings" {
+            "Main Room" => main_room key "scene_10109": false,
+            "Doxa Griel" => doxa_griel_area key "scene_15513": false,
+            "Statues 1" => statues_1 key "scene_14282": false,
+            "Statues 2" => statues_2 key "scene_14595": false,
+            "Basileus Area" => basileus_area key "scene_17202": false,
+            "Seren Garden" => seren_garden key "scene_114606": false,
+        },
+        "Archeozoic Chasm" {
+            "Entrance" => chasm_entrance key "scene_1479": false,
+            "Big Hole" => big_hole key "scene_18288": false,
+            "Small Holes" => small_holes key "scene_619": false,
+            "Before Coelacantos" => before_coelacantos key "scene_17105": false,
+            "Coelacantos Area" => coelacantos_area key "scene_9713": false,
+            "Depths" => chasm_depths key "scene_1531": false,
+            "Oceanus Lair" => oceanus_lair key "scene_72484": false,
+        },
+        "Octus Overlook" {
+            "Entrance (Sky Path)" => entrance_sky_path key "scene_86830": false,
+            "Ocean Path" => ocean_path key "scene_23775": false,
+            "Path of the Ocean Era" => path_of_the_ocean_era key "scene_54517": false,
+            "Hydra Arena" => hydra_arena key "scene_1883": false,
+            "Frozen Path" => frozen_path key "scene_22205": false,
+            "Path of the Frozen Era" => path_of_the_frozen_era key "scene_39766": false,
+            "Minos Arena" => minos_arena key "scene_1734": false,
+            "Insectoid Path" => insectoid_path key "scene_18227": false,
+            "Path of the Insectoid Era" => path_of_the_insectoid_era key "scene_40253": false,
+            "Nestor Arena" => nestor_arena key "scene_1860": false,
+            "Path of the Sky Era" => path_of_the_sky_era key "scene_65860": false,
+            "Ura Arena" => ura_arena key "scene_1810": false,
+            "Selection Sphere" => selection_sphere key "scene_22384": false,
+            "Theos" => theos key "scene_69634": false,
+        },
+        "Past Segments" {
+            "Old Ganna Approach" => old_ganna_approach key "scene_3550": false,
+            "Lodinia Highway" => lodinia_highway key "scene_56989": false,
+
+            "Aegias" {
+                "Stairs to Towal" => stairs_to_towal key "scene_7987": false,
+                "Central Stupa" => central_stupa key "scene_39158": false,
+                "Aerial Corridor" => aerial_corridor key "scene_101491": false,
+                "Royal Palace" => royal_palace key "scene_49080": false,
+                "Mist Bridge" => luminous_bridge key "scene_22754": false,
+                "Central District" => central_district key "scene_168634": false,
+            },
+            "Aegias (Smoke version)" {
+                "Central District" => central_district_smoke key "scene_53544": false,
+                "West District" => west_district_smoke key "scene_31117": false,
+                "Aerial Corridor" => aerial_corridor_smoke key "scene_20025": false,
+            },
+            "Towal Highway" {
+                "Outside Aegias" => outside_aegias key "scene_20711": false,
+                "Dino fight" => dino_fight key "scene_37540": false,
+            },
+            "Temple of the Great Tree" {
+                "Mountain Gate - Outdoors" => mountain_gate_outdoors key "scene_55507": false,
+                "Mountain Gate - Indoors" => mountain_gate_indoors key "scene_36746": false,
+                "Bridge" => temple_bridge key "scene_789": false,
+                "Main Quarters" => main_quarters key "scene_63489": false,
+                "Circular Room" => circular_room key "scene_29408": false,
+                "Behind temple" => behind_temple key "scene_34213": false,
+            },
+            "Kingsroad" {
+                "Jungle" => jungle key "scene_10725": false,
+                "Valley approach" => valley_approach key "scene_11134": false,
+            },
+            "Valley of Kings Front" {
+                "Entrance" => entrance key "scene_12080": false,
+                "Seren Garden" => past_seren_garden key "scene_39929": false,
+            },
+            "Sanctuary Crypt" {
+                "Chamber of Braziers 1" => chamber_of_braziers_1 key "scene_22674": false,
+                "Chamber of Braziers 2" => chamber_of_braziers_2 key "scene_10027": false,
+                "Chamber of Braziers Grazios" => chamber_of_braziers_grazios key "scene_46953": false,
+            },
+        },
+    },
+}
+
+// selectProcess {
+//     debug print(`{process.path() else "unavailable"}`)
+//     return true
+// }
+
+onAttach {
+    print(`Attached to {process.name()}`)
+    let module: Module = await process.mainModule()
+
+    print(`Module size is {module.size}`)
+    if module.size == 0x0045A000 {
+        build = Build.PrePatch
+        debug print("PrePatch version")
+        return
+    }
+    if module.size == 0x0074C000 {
+        build = Build.PostPatch
+        debug print("PostPatch version")
+        return
+    }
+
+    await process.closed()
+}
+
+onStart {
+    debug print("Timer started now!")
+    completedSplits.clear()
+}
+
+isLoading {
+    return current.loadingState == 1
+}
+
+split {
+    // debug print(`{current.scene}`)
+    if old.scene != current.scene {
+        if !completedSplits.containsKey(current.scene) {
+            completedSplits.insert(current.scene, true)
+            return settings.enabled(`scene_{current.scene}`)
+        }
+    }
+    let currentSceneBosses: [Boss] = match current.scene {
+        123918 => [Boss.AvocadoCoast, Boss.Kiergaard],
+        59671 => [Boss.Tentacle],
+        21458 => [Boss.Byfteriza],
+        8596 => [Boss.Serpentus],
+        20630 => [Boss.Clareon],
+        12671 => [Boss.Lombrigius],
+        10951 => [Boss.Gargantula],
+        11098 => [Boss.Magamandra],
+        19461 => [Boss.Laspisus],
+        55973 => [Boss.PirateRevenant],
+        81490 => [Boss.AvocadoGendarme],
+        57432 => [Boss.Giasburn],
+        21372 => [Boss.LeErythros],
+        17276 => [Boss.Exmetal],
+        15403 => [Boss.Carveros],
+        15513 => [Boss.DoxaGriel],
+        17202 => [Boss.Basileus],
+        9713 => [Boss.Coelacantos],
+        72484 => [Boss.Oceanus],
+        1883 => [Boss.Hydra],
+        1734 => [Boss.Minos],
+        1860 => [Boss.Nestor],
+        1810 => [Boss.Ura],
+        101491 => [Boss.LeKyanos],
+        32265 => [Boss.Brachion],
+        46953 => [Boss.Grazios],
+        69634 => [Boss.TheosTentacle, Boss.TheosCrystal, Boss.TheosHead],
+        _ => [],
+    }
+    for boss in currentSceneBosses {
+        debug print(`Checking {boss}`)
+        // debug print(`currently slain {current.slainBosses[boss]} {Boss.Laspisus}`)
+        if settings.enabled(`{boss_settings_name(boss)}`)
+            && current.slainBosses[boss] > old.slainBosses[boss]
+        {
+            debug print(`Slain boss {boss_settings_name(boss)}: {current.slainBosses[boss]}`)
+            return match boss {
+                Boss.TheosTentacle => current.slainBosses[boss] == 6,
+                Boss.LeKyanos | Boss.Magamandra | Boss.Laspisus
+                | Boss.Carveros => match current.bossHealth {
+                    Some(value) => {
+                        debug print(`Health {value}`)
+                        value == 0
+                    },
+                    None => {
+                        debug print("Health not found")
+                        false
+                    },
+                },
+                _ => current.slainBosses[boss] == 1,
+            }
+        }
+    }
+}
