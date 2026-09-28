@@ -46,11 +46,10 @@ jobs:
         working-directory: ./SplitScript
 
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Release
+        uses: softprops/action-gh-release@v3
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          working_directory: autosplitters
           prerelease: true
-          title: "Autosplitters Build"
           files: |
-            autosplitters/*.wasm
+            *.wasm
