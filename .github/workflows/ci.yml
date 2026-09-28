@@ -40,7 +40,7 @@ jobs:
       - name: Build wasm
         run: |
           for fname in ../*.split; do
-            cargo run --bin splitc -- fname -o ${fname%.split}.wasm --profile release;
+            cargo run --bin splitc -- $fname -o ${fname%.split}.wasm --profile release;
           done
             
         working-directory: ./SplitScript
