@@ -52,5 +52,5 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: true
           title: "Autosplitters Build"
-          files: 
+          files: |
             *.wasm
