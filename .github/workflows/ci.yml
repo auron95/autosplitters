@@ -51,5 +51,6 @@ jobs:
         with:
           working_directory: autosplitters
           prerelease: true
+          tag_name: latest
           files: |
             *.wasm
