@@ -79,7 +79,7 @@ struct BossOffset {
 }
 
 state "ys8.exe" {
-    if build == Build.PostPatch || build == Build.PrePatch {
+    if build == Build.PostPatch {
         loadingState: i32 at "ys8.exe", 0x707FC4;
         sceneMain: i32? at "ys8.exe", 0x0708220, 0xAB0;
         sceneBackup: i32 at "ys8.exe", 0x0708220, 0xBA8;
@@ -90,7 +90,6 @@ state "ys8.exe" {
                 None => sceneBackup,
             }
         };
-        // bossHealth: f32? at "ys8.exe", 0x705DC4, 0x3B8, 0x8, 0x0, 0x1088;
         bossHealth: f32? at "ys8.exe", 0x6CAC48, 0x1108, 0x9c0, 0x1088;
         journalAddress: address at "ys8.exe", 0x6CAC30;
         slainBosses = {
@@ -132,6 +131,8 @@ state "ys8.exe" {
             bosses
         };
         byfteriza: i8 at "ys8.exe", 0x6CAC30, 0x22B9E;
+    } else if build == Build.PrePatch {
+        loadingState: i32 at "ys8.exe", 0x3F0C0C, 0x150;
     }
 }
 
@@ -394,11 +395,6 @@ settings {
     },
 }
 
-// selectProcess {
-//     debug print(`{process.path() else "unavailable"}`)
-//     return true
-// }
-
 onAttach {
     print(`Attached to {process.name()}`)
     let module: Module = await process.mainModule()
@@ -412,6 +408,7 @@ onAttach {
     if module.size == 0x0074C000 {
         build = Build.PostPatch
         debug print("PostPatch version")
+        print("Only Load Removal is supported for the PrePatch version!")
         return
     }
 
@@ -428,64 +425,66 @@ isLoading {
 }
 
 split {
-    // debug print(`{current.scene}`)
-    if old.scene != current.scene {
-        if !completedSplits.containsKey(current.scene) {
-            completedSplits.insert(current.scene, true)
-            return settings.enabled(`scene_{current.scene}`)
-        }
-    }
-    let currentSceneBosses: [Boss] = match current.scene {
-        123918 => [Boss.AvocadoCoast, Boss.Kiergaard],
-        59671 => [Boss.Tentacle],
-        21458 => [Boss.Byfteriza],
-        8596 => [Boss.Serpentus],
-        20630 => [Boss.Clareon],
-        12671 => [Boss.Lombrigius],
-        10951 => [Boss.Gargantula],
-        11098 => [Boss.Magamandra],
-        19461 => [Boss.Laspisus],
-        55973 => [Boss.PirateRevenant],
-        81490 => [Boss.AvocadoGendarme],
-        57432 => [Boss.Giasburn],
-        21372 => [Boss.LeErythros],
-        17276 => [Boss.Exmetal],
-        15403 => [Boss.Carveros],
-        15513 => [Boss.DoxaGriel],
-        17202 => [Boss.Basileus],
-        9713 => [Boss.Coelacantos],
-        72484 => [Boss.Oceanus],
-        1883 => [Boss.Hydra],
-        1734 => [Boss.Minos],
-        1860 => [Boss.Nestor],
-        1810 => [Boss.Ura],
-        101491 => [Boss.LeKyanos],
-        32265 => [Boss.Brachion],
-        46953 => [Boss.Grazios],
-        69634 => [Boss.TheosTentacle, Boss.TheosCrystal, Boss.TheosHead],
-        _ => [],
-    }
-    for boss in currentSceneBosses {
-        debug print(`Checking {boss}`)
-        // debug print(`currently slain {current.slainBosses[boss]} {Boss.Laspisus}`)
-        if settings.enabled(`{boss_settings_name(boss)}`)
-            && current.slainBosses[boss] > old.slainBosses[boss]
+    if build == Build.PostPatch {
         {
-            debug print(`Slain boss {boss_settings_name(boss)}: {current.slainBosses[boss]}`)
-            return match boss {
-                Boss.TheosTentacle => current.slainBosses[boss] == 6,
-                Boss.LeKyanos | Boss.Magamandra | Boss.Laspisus
-                | Boss.Carveros => match current.bossHealth {
-                    Some(value) => {
-                        debug print(`Health {value}`)
-                        value == 0
-                    },
-                    None => {
-                        debug print("Health not found")
-                        false
-                    },
-                },
-                _ => current.slainBosses[boss] == 1,
+            if old.scene != current.scene {
+                if !completedSplits.containsKey(current.scene) {
+                    completedSplits.insert(current.scene, true)
+                    return settings.enabled(`scene_{current.scene}`)
+                }
+            }
+            let currentSceneBosses: [Boss] = match current.scene {
+                123918 => [Boss.AvocadoCoast, Boss.Kiergaard],
+                59671 => [Boss.Tentacle],
+                21458 => [Boss.Byfteriza],
+                8596 => [Boss.Serpentus],
+                20630 => [Boss.Clareon],
+                12671 => [Boss.Lombrigius],
+                10951 => [Boss.Gargantula],
+                11098 => [Boss.Magamandra],
+                19461 => [Boss.Laspisus],
+                55973 => [Boss.PirateRevenant],
+                81490 => [Boss.AvocadoGendarme],
+                57432 => [Boss.Giasburn],
+                21372 => [Boss.LeErythros],
+                17276 => [Boss.Exmetal],
+                15403 => [Boss.Carveros],
+                15513 => [Boss.DoxaGriel],
+                17202 => [Boss.Basileus],
+                9713 => [Boss.Coelacantos],
+                72484 => [Boss.Oceanus],
+                1883 => [Boss.Hydra],
+                1734 => [Boss.Minos],
+                1860 => [Boss.Nestor],
+                1810 => [Boss.Ura],
+                101491 => [Boss.LeKyanos],
+                32265 => [Boss.Brachion],
+                46953 => [Boss.Grazios],
+                69634 => [Boss.TheosTentacle, Boss.TheosCrystal, Boss.TheosHead],
+                _ => [],
+            }
+            for boss in currentSceneBosses {
+                if settings.enabled(`{boss_settings_name(boss)}`)
+                    && current.slainBosses[boss] > old.slainBosses[boss]
+                {
+                    debug print(`Slain boss {boss_settings_name(boss)}: {current
+                        .slainBosses[boss]}`)
+                    return match boss {
+                        Boss.TheosTentacle => current.slainBosses[boss] == 6,
+                        Boss.Magamandra => current.slainBosses[boss] == 8,
+                        Boss.LeKyanos | Boss.Laspisus | Boss.Carveros => match current.bossHealth {
+                            Some(value) => {
+                                debug print(`Health {value}`)
+                                value == 0
+                            },
+                            None => {
+                                debug print("Health not found")
+                                false
+                            },
+                        },
+                        _ => current.slainBosses[boss] == 1,
+                    }
+                }
             }
         }
     }
